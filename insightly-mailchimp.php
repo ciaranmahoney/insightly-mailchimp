@@ -19,6 +19,12 @@ foreach($opportunities as $opportunity){
 	$oppLinks = $opportunity->LINKS;
 	$oppCustomFields = $opportunity->CUSTOMFIELDS;
 
+	//Getting info for responsible user
+	$oppResponsibleUserID = $opportunity->RESPONSIBLE_USER_ID;
+	$oppResponsibleUserInfo = $insightly->getUser($oppResponsibleUserID);
+	$oppResponsibleUserName = $oppResponsibleUserInfo->FIRST_NAME . " " . $oppResponsibleUserInfo->LAST_NAME;
+	$oppResponsibleUserEmail = $oppResponsibleUserInfo->EMAIL_ADDRESS;
+
 	//Loop through links
 	foreach($oppLinks as $oppLink){
 
@@ -27,7 +33,7 @@ foreach($opportunities as $opportunity){
 		if($oppLinkRole == "STUDENT" && $oppUpdated == $today){
 			$contactID = $oppLink->CONTACT_ID;
 
-			//Loop through custom fields
+			//Loop through opportunity custom fields
 			foreach($oppCustomFields as $oppCustomField) {
 
 				//Get Country of Citizenship
@@ -80,6 +86,7 @@ foreach($opportunities as $opportunity){
 				echo "<br/>" . $oppBirthday;
 				echo "<br/>" . $oppState;
 				echo "<br/>" . $oppUpdated;
+				echo "<br/>" . $oppResponsibleUserEmail;
 				echo "<br/>" . $contactID;
 				echo "<br/>" . $oppCountry;
 				echo "<br/>" . $contactFName;
@@ -90,53 +97,54 @@ foreach($opportunities as $opportunity){
 				echo "<br/><br/>";
 
 				// Creates batch[] array for Mailchimp import
-				$batch[] = array('EMAIL'=>$contactEmail, 'FNAME'=>$contactFName, 'LNAME'=>$contactLName, 'MMERGE3'=>$oppCountry, 'MMERGE6'=>'International Student', 'MMERGE4'=>$contactPhone, 'CRMSTATE'=>$oppState, 'CRMOPPID'=>$oppId, 'MMERGE7'=>$oppSource, 'MMERGE8'=>$oppBirthday); 		
+				$batch[] = array('EMAIL'=>$contactEmail, 'FNAME'=>$contactFName, 'LNAME'=>$contactLName, 'MMERGE3'=>$oppCountry, 'MMERGE6'=>'International Student', 'MMERGE4'=>$contactPhone, 'CRMSTATE'=>$oppState, 'CRMOPPID'=>$oppId, 'MMERGE7'=>$oppSource, 'MMERGE8'=>$oppBirthday, 'CRMOPPOWNE'=>$oppResponsibleUserName, 'CRMOPPOWNE'=>$oppResponsibleUserEmail); 		
 
 			}
 		}
 	}
 	
-}
-//START MAILCHIMP
-if(isset($batch)){
-	$api = new MCAPI($apikeyMC);
+} // END INSIGHTLY DATA
 
-	$optin = false; //no, don't send optin emails
-	$up_exist = true; // yes, update currently subscribed users
-	$replace_int = false; // no, add interest, don't replace
+// //START MAILCHIMP
+// if(isset($batch)){
+// 	$api = new MCAPI($apikeyMC);
 
-	$vals = $api->listBatchSubscribe($listId,$batch,$optin, $up_exist, $replace_int);
+// 	$optin = false; //no, don't send optin emails
+// 	$up_exist = true; // yes, update currently subscribed users
+// 	$replace_int = false; // no, add interest, don't replace
 
-	if ($api->errorCode){
+// 	$vals = $api->listBatchSubscribe($listId,$batch,$optin, $up_exist, $replace_int);
+
+// 	if ($api->errorCode){
 		
-	    echo "Batch Subscribe failed!\n";
-		echo "code:".$api->errorCode."\n";
-		echo "msg :".$api->errorMessage."\n";
-		} else {
-		echo "added:   ".$vals['add_count']."\n";
-		echo "updated: ".$vals['update_count']."\n";
-		echo "errors:  ".$vals['error_count']."\n";
+// 	    echo "Batch Subscribe failed!\n";
+// 		echo "code:".$api->errorCode."\n";
+// 		echo "msg :".$api->errorMessage."\n";
+// 		} else {
+// 		echo "added:   ".$vals['add_count']."\n";
+// 		echo "updated: ".$vals['update_count']."\n";
+// 		echo "errors:  ".$vals['error_count']."\n";
 		
-		foreach($vals['errors'] as $val){
-			echo $val['email_address']. " failed\n";
-			echo "code:".$val['code']."\n";
-			echo "msg :".$val['message']."\n";
-		}
+// 		foreach($vals['errors'] as $val){
+// 			echo $val['email_address']. " failed\n";
+// 			echo "code:".$val['code']."\n";
+// 			echo "msg :".$val['message']."\n";
+// 		}
 
-	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
-		$to = "ciaran@zhoom.com.au"; 
-		$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. Errors:" . $vals['error_count']."\n; Added: ".$vals['add_count'] ."\n; Updated: ". $vals['update_count'] ."\n";
-		$body = $vals['errors'];
-		mail($to, $subject, $body);
-	}
-} else {
-	echo "No updated records to import";
-	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
-	$to = "ciaran@zhoom.com.au"; 
-	$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. No updated records to import";
-	$body = "Nothing here :) ";
-	mail($to, $subject, $body);
-}
-//END MAILCHIMP
+// 	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
+// 		$to = "ciaran@zhoom.com.au"; 
+// 		$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. Errors:" . $vals['error_count']."\n; Added: ".$vals['add_count'] ."\n; Updated: ". $vals['update_count'] ."\n";
+// 		$body = $vals['errors'];
+// 		mail($to, $subject, $body);
+// 	}
+// } else {
+// 	echo "No updated records to import";
+// 	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
+// 	$to = "ciaran@zhoom.com.au"; 
+// 	$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. No updated records to import";
+// 	$body = "Nothing here :) ";
+// 	mail($to, $subject, $body);
+// }
+// //END MAILCHIMP
 
 ?>
