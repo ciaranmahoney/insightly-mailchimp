@@ -6,7 +6,7 @@ require("inc/insightly.php");
 
 $insightly = new Insightly($apikeyIN);
 
-$opportunities = $insightly->getOpportunities(); // can limit # of records retrived with: array('top' => SOME_INTEGER)
+$opportunities = $insightly->getOpportunities(array('top'=> 20)); // can limit # of records retrived with: array('top' => SOME_INTEGER)
 
 $today = date("Y-m-d");
 
@@ -19,32 +19,36 @@ foreach($opportunities as $opportunity){
 	$oppLinks = $opportunity->LINKS;
 	$oppCustomFields = $opportunity->CUSTOMFIELDS;
 
-	//Getting info for responsible user
+	//Getting info for responsible user in CRM
 	$oppResponsibleUserID = $opportunity->RESPONSIBLE_USER_ID;
 	$oppResponsibleUserInfo = $insightly->getUser($oppResponsibleUserID);
-	$oppResponsibleUserName = $oppResponsibleUserInfo->FIRST_NAME . " " . $oppResponsibleUserInfo->LAST_NAME;
+	$oppResponsibleUserFName = $oppResponsibleUserInfo->FIRST_NAME;
+	$oppResponsibleUserLName = $oppResponsibleUserInfo->LAST_NAME;
+	$oppResponsibleUserName = $oppResponsibleUserFName . " " . $oppResponsibleUserLName;
 	$oppResponsibleUserEmail = $oppResponsibleUserInfo->EMAIL_ADDRESS;
 
 	//Loop through links
 	foreach($oppLinks as $oppLink){
 
-		//Run remaining code only when link is STUDENT
 		$oppLinkRole = strtoupper($oppLink->ROLE);
-		if($oppLinkRole == "STUDENT" && $oppUpdated == $today){
+		//Only get data for Students updated today
+		if($oppLinkRole == "STUDENT" /**&& $oppUpdated == $today**/){ 
 			$contactID = $oppLink->CONTACT_ID;
 
 			//Loop through opportunity custom fields
 			foreach($oppCustomFields as $oppCustomField) {
 
-				//Get Country of Citizenship
-				if($oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_5"){
+				//Get Country of Citizenship custom field
+				if(isset($oppCustomField->CUSTOM_FIELD_ID) && $oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_5"){
 					$oppCountry = $oppCustomField->FIELD_VALUE;
 				} 
-				//Get Source
-				if($oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_9"){
+				//Get Source custom field
+				if(isset($oppCustomField->CUSTOM_FIELD_ID) && $oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_9"){
 					$oppSource = $oppCustomField->FIELD_VALUE;
 				} 
-				if($oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_12"){
+
+				//Get Birthday custom field
+				if(isset($oppCustomField->CUSTOM_FIELD_ID) && $oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_12"){
 					$oppBirthday = $oppCustomField->FIELD_VALUE;
 				} 
 			}
@@ -68,10 +72,10 @@ foreach($opportunities as $opportunity){
 
 			//Loop through contact details to get email and phone
 			foreach($contactInfos as $contactInfo){
-				if($contactInfo->TYPE == "EMAIL"){
+				if(isset($contactInfo->TYPE) && $contactInfo->TYPE == "EMAIL"){
 					$contactEmail = $contactInfo->DETAIL;
 				} 
-				if($contactInfo->TYPE == "PHONE"){
+				if(isset($contactInfo->TYPE) && $contactInfo->TYPE == "PHONE"){
 					$contactPhone = $contactInfo->DETAIL;
 				} 
 			}
@@ -80,13 +84,14 @@ foreach($opportunities as $opportunity){
 			if(isset($contactEmail)){
 				//Checking the variables are correct. Remove or comment out on production.
 				echo $oppId;
+				echo "<br/>" . $oppResponsibleUserName;
+				echo "<br/>" . $oppResponsibleUserEmail;
 				echo "<br/>" . $oppName;
 				echo "<br/>" . $oppId;
 				echo "<br/>" . $oppLinkRole;
 				echo "<br/>" . $oppBirthday;
 				echo "<br/>" . $oppState;
 				echo "<br/>" . $oppUpdated;
-				echo "<br/>" . $oppResponsibleUserEmail;
 				echo "<br/>" . $contactID;
 				echo "<br/>" . $oppCountry;
 				echo "<br/>" . $contactFName;
@@ -97,7 +102,7 @@ foreach($opportunities as $opportunity){
 				echo "<br/><br/>";
 
 				// Creates batch[] array for Mailchimp import
-				$batch[] = array('EMAIL'=>$contactEmail, 'FNAME'=>$contactFName, 'LNAME'=>$contactLName, 'MMERGE3'=>$oppCountry, 'MMERGE6'=>'International Student', 'MMERGE4'=>$contactPhone, 'CRMSTATE'=>$oppState, 'CRMOPPID'=>$oppId, 'MMERGE7'=>$oppSource, 'MMERGE8'=>$oppBirthday, 'CRMOPPOWNE'=>$oppResponsibleUserName, 'CRMOPPOWNE'=>$oppResponsibleUserEmail); 		
+				$batch[] = array('EMAIL'=>$contactEmail, 'FNAME'=>$contactFName, 'LNAME'=>$contactLName, 'MMERGE3'=>$oppCountry, 'MMERGE6'=>'International Student', 'MMERGE4'=>$contactPhone, 'CRMSTATE'=>$oppState, 'CRMOPPID'=>$oppId, 'MMERGE7'=>$oppSource, 'MMERGE8'=>$oppBirthday, 'CRMOPPOWNE'=>$oppResponsibleUserName, 'CRMOWNEMAI'=>$oppResponsibleUserEmail); 		
 
 			}
 		}
