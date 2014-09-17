@@ -1,5 +1,5 @@
 <?php
-	// THIS FILE SHOULD BE UPDATED TO INCLUDE THE API KEYS AND LIST ID, AS BELOW. THEN RENAME AS config.inc.php and saved in the inc folder (current location).
+	// THIS FILE SHOULD BE UPDATED TO INCLUDE THE API KEYS AND LIST ID, AS BELOW. THEN RENAME AS config.inc.php and saved in the inc folder (current location). 
 
     //Mailchimp API Key - see http://admin.mailchimp.com/account/api
     $apikeyMC = 'YOUR-MAILCHIMP-API-KEY';
