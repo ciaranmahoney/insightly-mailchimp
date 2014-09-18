@@ -1,4 +1,5 @@
 <?php
+// This script is from https://github.com/Insightly/php/blob/master/insightly.php You should probably go there and download the current version.
 
 class Insightly{
   private $apikey;
@@ -228,6 +229,10 @@ class Insightly{
     $request = $this->GET("/v2.1/Opportunities");
     $this->buildODataQuery($request, $options);
     return $request->asJSON();
+  }
+
+  public function getOpportunity($id){
+    return $this->GET("/v2.1/Opportunities/" . $id)->asJSON();
   }
 
   public function addOpportunity($opportunity){
