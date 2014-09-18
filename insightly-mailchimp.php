@@ -6,7 +6,8 @@ require("inc/insightly.php");
 
 $insightly = new Insightly($apikeyIN);
 
-$opportunities = $insightly->getOpportunities(array('top'=> 20)); // can limit # of records retrived with: array('top' => SOME_INTEGER)
+$opportunities = $insightly->getOpportunities(); // can limit # of records retrived with: array('top' => SOME_INTEGER)
+$pipelineStages = $insightly->getPipelineStages();
 
 $today = date("Y-m-d");
 
@@ -19,23 +20,38 @@ foreach($opportunities as $opportunity){
 	$oppLinks = $opportunity->LINKS;
 	$oppCustomFields = $opportunity->CUSTOMFIELDS;
 
-	//Getting info for responsible user in CRM
-	$oppResponsibleUserID = $opportunity->RESPONSIBLE_USER_ID;
-	$oppResponsibleUserInfo = $insightly->getUser($oppResponsibleUserID);
-	$oppResponsibleUserFName = $oppResponsibleUserInfo->FIRST_NAME;
-	$oppResponsibleUserLName = $oppResponsibleUserInfo->LAST_NAME;
-	$oppResponsibleUserName = $oppResponsibleUserFName . " " . $oppResponsibleUserLName;
-	$oppResponsibleUserEmail = $oppResponsibleUserInfo->EMAIL_ADDRESS;
-
-	//Loop through links
+	//Loop through links to check if the linked contact is a student
 	foreach($oppLinks as $oppLink){
 
 		$oppLinkRole = strtoupper($oppLink->ROLE);
-		//Only get data for Students updated today
-		if($oppLinkRole == "STUDENT" /**&& $oppUpdated == $today**/){ 
+		//Only get data for Students that were updated today
+		if($oppLinkRole == "STUDENT" && $oppUpdated == $today){ 
 			$contactID = $oppLink->CONTACT_ID;
 
-			//Loop through opportunity custom fields
+			//Getting Pipeline stage name
+			$oppInfo = $insightly->getOpportunity($oppId);
+			$oppPipelineStageID = $oppInfo->STAGE_ID;
+
+			foreach($pipelineStages as $pipelineStage){
+				$pipelineStageName = $pipelineStage->STAGE_NAME;
+				$pipelineStageID = $pipelineStage->STAGE_ID;
+
+				if($oppPipelineStageID == $pipelineStageID) {
+					$oppPipelineStageName = $pipelineStageName;
+				}
+			}
+			//Getting info for responsible user in CRM
+			$oppResponsibleUserID = $opportunity->RESPONSIBLE_USER_ID;
+			$oppResponsibleUserInfo = $insightly->getUser($oppResponsibleUserID);
+
+			if(isset($oppResponsibleUserInfo)){
+				$oppResponsibleUserFName = $oppResponsibleUserInfo->FIRST_NAME;
+				$oppResponsibleUserLName = $oppResponsibleUserInfo->LAST_NAME;
+				$oppResponsibleUserName = $oppResponsibleUserFName . " " . $oppResponsibleUserLName;
+				$oppResponsibleUserEmail = $oppResponsibleUserInfo->EMAIL_ADDRESS;
+			}
+
+			//Get custom field data
 			foreach($oppCustomFields as $oppCustomField) {
 
 				//Get Country of Citizenship custom field
@@ -49,60 +65,63 @@ foreach($opportunities as $opportunity){
 
 				//Get Birthday custom field
 				if(isset($oppCustomField->CUSTOM_FIELD_ID) && $oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_12"){
-					$oppBirthday = $oppCustomField->FIELD_VALUE;
+					$oppBirthday = date("m/d", strtotime($oppCustomField->FIELD_VALUE));
 				} 
 			}
 
 			// Get contact record info based on $contactID
-			$contact = $insightly->getContact($contactID);
+			if(null !== $insightly->getContact($contactID)){
+				$contact = $insightly->getContact($contactID);
 
-			//Use default value of "student" if names not set
-			if(isset($contact->FIRST_NAME)){
-				$contactFName = $contact->FIRST_NAME;
-			} else {
-				$contactFName = "Student";
+				//Use default value of "student" if names not set
+				if(isset($contact->FIRST_NAME)){
+					$contactFName = $contact->FIRST_NAME;
+				} else {
+					$contactFName = "Student";
+				}
+				if(isset($contact->LAST_NAME)){
+					$contactLName = $contact->LAST_NAME;
+				} else {
+					$contactLName = "Student";
+				}
+
+				$contactInfos = $contact->CONTACTINFOS;
+
+				//Loop through contact details to get email and phone
+				foreach($contactInfos as $contactInfo){
+					if(isset($contactInfo->TYPE) && $contactInfo->TYPE == "EMAIL"){
+						$contactEmail = $contactInfo->DETAIL;
+					} 
+					if(isset($contactInfo->TYPE) && $contactInfo->TYPE == "PHONE"){
+						$contactPhone = $contactInfo->DETAIL;
+					} 
+				}
 			}
-			if(isset($contact->LAST_NAME)){
-				$contactLName = $contact->LAST_NAME;
-			} else {
-				$contactLName = "Student";
-			}
 
-			$contactInfos = $contact->CONTACTINFOS;
-
-			//Loop through contact details to get email and phone
-			foreach($contactInfos as $contactInfo){
-				if(isset($contactInfo->TYPE) && $contactInfo->TYPE == "EMAIL"){
-					$contactEmail = $contactInfo->DETAIL;
-				} 
-				if(isset($contactInfo->TYPE) && $contactInfo->TYPE == "PHONE"){
-					$contactPhone = $contactInfo->DETAIL;
-				} 
-			}
-
-			//If contact email is set, create batch array
+			//If contact info is set, create batch array
 			if(isset($contactEmail)){
-				//Checking the variables are correct. Remove or comment out on production.
-				echo $oppId;
-				echo "<br/>" . $oppResponsibleUserName;
-				echo "<br/>" . $oppResponsibleUserEmail;
-				echo "<br/>" . $oppName;
-				echo "<br/>" . $oppId;
-				echo "<br/>" . $oppLinkRole;
-				echo "<br/>" . $oppBirthday;
-				echo "<br/>" . $oppState;
-				echo "<br/>" . $oppUpdated;
-				echo "<br/>" . $contactID;
-				echo "<br/>" . $oppCountry;
-				echo "<br/>" . $contactFName;
-				echo "<br/>" . $contactLName;
-				echo "<br/>" . $contactEmail;
-				echo "<br/>" . $contactPhone;
-				echo "<br/>" . $oppSource;
-				echo "<br/><br/>";
+				//I use this to checking the variables are correct. Remove or comment out on production.
+				// echo $oppId;
+				// echo "<br/>" . $oppResponsibleUserName;
+				// echo "<br/>" . $oppResponsibleUserEmail;
+				// echo "<br/>" . $oppName;
+				// echo "<br/>" . $oppId;
+				// echo "<br/>" . $oppLinkRole;
+				// echo "<br/>" . $oppBirthday;
+				// echo "<br/>" . $oppState;
+				// echo "<br/>" . $oppPipelineStageName;
+				// echo "<br/>" . $oppUpdated;
+				// echo "<br/>" . $contactID;
+				// echo "<br/>" . $oppCountry;
+				// echo "<br/>" . $contactFName;
+				// echo "<br/>" . $contactLName;
+				// echo "<br/>" . $contactEmail;
+				// echo "<br/>" . $contactPhone; 
+				// echo "<br/>" . $oppSource;
+				// echo "<br/><br/>";
 
 				// Creates batch[] array for Mailchimp import
-				$batch[] = array('EMAIL'=>$contactEmail, 'FNAME'=>$contactFName, 'LNAME'=>$contactLName, 'MMERGE3'=>$oppCountry, 'MMERGE6'=>'International Student', 'MMERGE4'=>$contactPhone, 'CRMSTATE'=>$oppState, 'CRMOPPID'=>$oppId, 'MMERGE7'=>$oppSource, 'MMERGE8'=>$oppBirthday, 'CRMOPPOWNE'=>$oppResponsibleUserName, 'CRMOWNEMAI'=>$oppResponsibleUserEmail); 		
+				$batch[] = array('EMAIL'=>$contactEmail, 'FNAME'=>$contactFName, 'LNAME'=>$contactLName, 'MMERGE3'=>$oppCountry, 'MMERGE6'=>'International Student', 'MMERGE4'=>$contactPhone, 'CRMSTATE'=>$oppState, 'CRMOPPID'=>$oppId, 'MMERGE7'=>$oppSource, 'MMERGE8'=>$oppBirthday, 'CRMOPPOWNE'=>$oppResponsibleUserName, 'CRMOWNEMAI'=>$oppResponsibleUserEmail, 'CRMPIPELIN'=>$oppPipelineStageName); 		
 
 			}
 		}
@@ -110,46 +129,48 @@ foreach($opportunities as $opportunity){
 	
 } // END INSIGHTLY DATA
 
-// //START MAILCHIMP
-// if(isset($batch)){
-// 	$api = new MCAPI($apikeyMC);
+//START MAILCHIMP
+// Hacked together from code found here: http://apidocs.mailchimp.com/api/downloads/#php
+if(isset($batch)){
+	$api = new MCAPI($apikeyMC);
 
-// 	$optin = false; //no, don't send optin emails
-// 	$up_exist = true; // yes, update currently subscribed users
-// 	$replace_int = false; // no, add interest, don't replace
+	$optin = false; //no, don't send optin emails
+	$up_exist = true; // yes, update currently subscribed users
+	$replace_int = false; // no, add interest, don't replace
 
-// 	$vals = $api->listBatchSubscribe($listId,$batch,$optin, $up_exist, $replace_int);
+	$vals = $api->listBatchSubscribe($listId,$batch,$optin, $up_exist, $replace_int);
 
-// 	if ($api->errorCode){
+	if ($api->errorCode){
 		
-// 	    echo "Batch Subscribe failed!\n";
-// 		echo "code:".$api->errorCode."\n";
-// 		echo "msg :".$api->errorMessage."\n";
-// 		} else {
-// 		echo "added:   ".$vals['add_count']."\n";
-// 		echo "updated: ".$vals['update_count']."\n";
-// 		echo "errors:  ".$vals['error_count']."\n";
+	    echo "Batch Subscribe failed!\n";
+		echo "code:".$api->errorCode."\n";
+		echo "msg :".$api->errorMessage."\n";
+		} else {
+		echo "added:   ".$vals['add_count']."\n";
+		echo "updated: ".$vals['update_count']."\n";
+		echo "errors:  ".$vals['error_count']."\n";
 		
-// 		foreach($vals['errors'] as $val){
-// 			echo $val['email_address']. " failed\n";
-// 			echo "code:".$val['code']."\n";
-// 			echo "msg :".$val['message']."\n";
-// 		}
+		foreach($vals['errors'] as $val){
+			echo $val['email_address']. " failed\n";
+			echo "code:".$val['code']."\n";
+			echo "msg :".$val['message']."\n";
+		}
 
-// 	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
-// 		$to = "ciaran@zhoom.com.au"; 
-// 		$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. Errors:" . $vals['error_count']."\n; Added: ".$vals['add_count'] ."\n; Updated: ". $vals['update_count'] ."\n";
-// 		$body = $vals['errors'];
-// 		mail($to, $subject, $body);
-// 	}
-// } else {
-// 	echo "No updated records to import";
-// 	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
-// 	$to = "ciaran@zhoom.com.au"; 
-// 	$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. No updated records to import";
-// 	$body = "Nothing here :) ";
-// 	mail($to, $subject, $body);
-// }
-// //END MAILCHIMP
+	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
+		$to = $completionEmail; 
+		$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. Errors:" . $vals['error_count']."\n; Added: ".$vals['add_count'] ."\n; Updated: ". $vals['update_count'] ."\n";
+		$body = "Need to fix this...";
+		mail($to, $subject, $body);
+	}
+
+} else {
+	echo "No updated records to import";
+	//Send email confirming completion, but with no new records.
+	$to = $completionEmail; 
+	$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. No updated records to import";
+	$body = "Nothing here :) ";
+	mail($to, $subject, $body);
+}
+//END MAILCHIMP
 
 ?>
