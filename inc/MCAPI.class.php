@@ -1,5 +1,5 @@
 <?php
-
+// From here: http://apidocs.mailchimp.com/api/downloads/#php
 class MCAPI {
     var $version = "1.3";
     var $errorMessage;
