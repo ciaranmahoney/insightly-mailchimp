@@ -61,7 +61,7 @@ foreach($opportunities as $opportunity){
 				//Get Source custom field
 				if(isset($oppCustomField->CUSTOM_FIELD_ID) && $oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_9"){
 					$oppSource = $oppCustomField->FIELD_VALUE;
-				} 
+				}
 
 				//Get Birthday custom field
 				if(isset($oppCustomField->CUSTOM_FIELD_ID) && $oppCustomField->CUSTOM_FIELD_ID == "OPPORTUNITY_FIELD_12"){
@@ -145,7 +145,7 @@ if(isset($batch)){
 	    echo "Batch Subscribe failed!\n";
 		echo "code:".$api->errorCode."\n";
 		echo "msg :".$api->errorMessage."\n";
-		} else {
+	} else {
 		echo "added:   ".$vals['add_count']."\n";
 		echo "updated: ".$vals['update_count']."\n";
 		echo "errors:  ".$vals['error_count']."\n";
@@ -154,13 +154,19 @@ if(isset($batch)){
 			echo $val['email_address']. " failed\n";
 			echo "code:".$val['code']."\n";
 			echo "msg :".$val['message']."\n";
+			$errorList = $val['email_address']. " failed\n; Code:".$val['code']."\n; Msg :".$val['message']."\n";
 		}
 
 	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
 		$to = $completionEmail; 
 		$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. Errors:" . $vals['error_count']."\n; Added: ".$vals['add_count'] ."\n; Updated: ". $vals['update_count'] ."\n";
-		$body = "Need to fix this...";
+		if(isset($errorList)) {
+			$body = "<strong>Some errors occurred during import</strong><br/>" . $errorList;
+		} else {
+			$body = "Import done with no errors. Woo hoo!";
+		}
 		mail($to, $subject, $body);
+
 	}
 
 } else {
@@ -168,7 +174,7 @@ if(isset($batch)){
 	//Send email confirming completion, but with no new records.
 	$to = $completionEmail; 
 	$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. No updated records to import";
-	$body = "Nothing here :) ";
+	$body = "Nothing new to update... Have a good day :)";
 	mail($to, $subject, $body);
 }
 //END MAILCHIMP
