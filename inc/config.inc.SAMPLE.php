@@ -12,4 +12,16 @@
     
     // insightly API key
     $apikeyIN = "YOUR-INSIGHTLY-API-KEY";
+
+    // Email address to send completion email TO
+    $completionToEmail = "TO-EMAIL";
+
+    // Email address to send complettion email FROM
+    $completionFromEmail = "FROM-EMAIL";
+
+    // Email address to CC complettion email 
+    $completionCCEmail = "CC-EMAIL";
+
+    // Email address to reply to completion email 
+    $completionReplyEmail = "REPLY-EMAIL";
 ?>

@@ -100,7 +100,7 @@ foreach($opportunities as $opportunity){
 
 			//If contact info is set, create batch array
 			if(isset($contactEmail)){
-				//I use this to checking the variables are correct. Remove or comment out on production.
+				//I use this for checking the variables are correct by running insightly-mailchimp.php on localhost. Remove or comment out on production.
 				// echo $oppId;
 				// echo "<br/>" . $oppResponsibleUserName;
 				// echo "<br/>" . $oppResponsibleUserEmail;
@@ -131,7 +131,7 @@ foreach($opportunities as $opportunity){
 
 //START MAILCHIMP
 // Hacked together from code found here: http://apidocs.mailchimp.com/api/downloads/#php
-if(isset($batch)){
+if(isset($batch)){ // Send confirmation email when data transferred.
 	$api = new MCAPI($apikeyMC);
 
 	$optin = false; //no, don't send optin emails
@@ -154,28 +154,42 @@ if(isset($batch)){
 			echo $val['email_address']. " failed\n";
 			echo "code:".$val['code']."\n";
 			echo "msg :".$val['message']."\n";
-			$errorList = $val['email_address']. " failed\n; Code:".$val['code']."\n; Msg :".$val['message']."\n";
+			$errorList = $val['email_address'] . "Error Code:".$val['code']."\n Error Msg :".$val['message']."\n";
 		}
 
 	//Send email with Mailchimp Errors to see what was imported and where errors occurred.
-		$to = $completionEmail; 
+		$to = $completionToEmail; 
 		$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. Errors:" . $vals['error_count']."\n; Added: ".$vals['add_count'] ."\n; Updated: ". $vals['update_count'] ."\n";
 		if(isset($errorList)) {
-			$body = "<strong>Some errors occurred during import</strong><br/>" . $errorList;
+			$body = "**Some errors occurred during import**\n" . $errorList;
 		} else {
 			$body = "Import done with no errors. Woo hoo!";
 		}
-		mail($to, $subject, $body);
+
+		//Set headers
+		$headers = "From: " . $completionFromEmail . "\r\n";
+		$headers .= "Reply-To: " . $completionReplyEmail . "\r\n"; 
+		$headers .= "Cc: " . $completionCCEmail . "\r\n";
+
+		//Send email
+		mail($to, $subject, $body, $headers);
 
 	}
 
-} else {
+} else { // Send confirmation if there no new records to transfer
 	echo "No updated records to import";
 	//Send email confirming completion, but with no new records.
-	$to = $completionEmail; 
+	$to = $completionToEmail; 
 	$subject = "Insightly to Mailchimp Transfer Completed [" . $today . "]. No updated records to import";
 	$body = "Nothing new to update... Have a good day :)";
-	mail($to, $subject, $body);
+
+	// Set headers
+	$headers = "From: " . $completionFromEmail . "\r\n";
+	$headers .= "Reply-To: " . $completionReplyEmail . "\r\n"; 
+	$headers .= "Cc: " . $completionCCEmail . "\r\n";
+
+	//Send email
+	mail($to, $subject, $body, $headers);
 }
 //END MAILCHIMP
 
