@@ -8,7 +8,5 @@ The script is run as a nightly cron job to get all opportunities that were chang
 It basically gets a list of opportunities that were updated "today", gets the related contact and finds that contact's contact info, along with a few other pipeline related data points. Finally, it sends the data to Mailchimp - Mailchimp is setup to  triggers a series of emails depending on data updated by this script.
 
 This incorporates scripts from:
-[Insightly](https://github.com/Insightly/php/blob/master/insightly.php)
+[Insightly](https://github.com/Insightly/php/blob/master/insightly.php) & 
 [Mailchimp](http://apidocs.mailchimp.com/api/downloads/#php)
-
-[ ![Codeship Status for ciaranmahoney/insightly-mailchimp](https://codeship.io/projects/4ff48430-2c87-0132-1003-1a5fd1e7c811/status)](https://codeship.io/projects/38935)
