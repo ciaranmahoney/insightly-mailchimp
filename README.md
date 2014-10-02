@@ -10,3 +10,5 @@ It basically gets a list of opportunities that were updated "today", gets the re
 This incorporates scripts from:
 [Insightly](https://github.com/Insightly/php/blob/master/insightly.php)
 [Mailchimp](http://apidocs.mailchimp.com/api/downloads/#php)
+
+[ ![Codeship Status for ciaranmahoney/insightly-mailchimp](https://codeship.io/projects/4ff48430-2c87-0132-1003-1a5fd1e7c811/status)](https://codeship.io/projects/38935)
